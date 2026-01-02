@@ -7,6 +7,7 @@ import (
 	"strings"
 	"github.com/WagnerJust/go-pokedex/internal/pokeapi"
 )
+
 type config struct {
 	pokeapiClient *pokeapi.PokeApiClient
 	nextUrl		  *string
@@ -15,7 +16,7 @@ type config struct {
 
 type cliCommand struct {
 	name, description string
-	callback          func(config *config) error
+	callback          func(config *config, args ...string) error
 }
 
 var commands map[string]cliCommand
@@ -42,16 +43,21 @@ func init() {
 			description: "Shows you the previous 20 location areas",
 			callback:    mapLocationAreasB,
 		},
+		"explore": {
+			name:        "explore",
+			description: "Explore a location area",
+			callback: exploreLocationArea,
+		},
 	}
 }
 
-func commandExit(config *config) error {
+func commandExit(config *config, args ...string ) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func help(config *config) error {
+func help(config *config, args ...string ) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
@@ -61,10 +67,9 @@ func help(config *config) error {
 	return nil
 }
 
-func mapLocationAreas(config *config) error {
+func mapLocationAreas(config *config, args ...string ) error {
 	locationAreas, err := config.pokeapiClient.GetLocationAreas(config.nextUrl)
 	if err != nil {
-		fmt.Println("Error:", err)
 		return err
 	}
 	config.nextUrl = locationAreas.Next
@@ -78,10 +83,9 @@ func mapLocationAreas(config *config) error {
 	return nil
 }
 
-func mapLocationAreasB(config *config) error {
+func mapLocationAreasB(config *config, args ...string ) error {
 	locationAreas, err := config.pokeapiClient.GetLocationAreas(config.previousUrl)
 	if err != nil {
-		fmt.Println("Error:", err)
 		return err
 	}
 	config.previousUrl = locationAreas.Previous
@@ -91,6 +95,27 @@ func mapLocationAreasB(config *config) error {
 	}
 	for _, area := range locationAreas.Results {
 		fmt.Println(area.Name)
+	}
+	return nil
+}
+
+func exploreLocationArea(config *config, args ...string ) error {
+	if len(args) < 2 {
+		return fmt.Errorf("explore requires a location area name")
+	}
+	name := args[1]
+	fmt.Printf("Exploring %s...\n", name )
+	detailedLocationArea, err := config.pokeapiClient.GetDetailedLocationArea(name)
+	if err != nil {
+		return err
+	}
+	if len(detailedLocationArea.PokemonEncounters) == 0 {
+		fmt.Println("No Pokemon in this area")
+		return nil
+	}
+	fmt.Println("Found Pokemon:")
+	for _, encounter := range detailedLocationArea.PokemonEncounters {
+		fmt.Printf(" - %s\n", encounter.Pokemon.Name)
 	}
 	return nil
 }
@@ -118,6 +143,9 @@ func ReplLoop() {
 			fmt.Println("Unknown command")
 			continue
 		}
-		value.callback(&config)
+		err := value.callback(&config, input...)
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
 	}
 }
