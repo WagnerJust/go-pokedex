@@ -13,10 +13,13 @@ func NewPokedex() *Pokedex {
 	}
 }
 
-func (p *Pokedex) Add(name string, pokemon pokeapi.Pokemon) {
-	p.pokemon[name] = pokemon
+func (p *Pokedex) Add(pokemon pokeapi.Pokemon) {
+	p.pokemon[pokemon.Name] = pokemon
 }
 
-func (p *Pokedex) List() []pokeapi.Pokemon {
-	// ...
+func (p *Pokedex) Get(name string) (pokeapi.Pokemon, bool) {
+	if pokemon, ok := p.pokemon[name]; ok {
+		return pokemon, true
+	}
+	return pokeapi.Pokemon{}, false
 }

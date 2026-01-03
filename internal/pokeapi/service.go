@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"time"
-	"fmt"
 	"github.com/WagnerJust/go-pokedex/internal/pokecache"
 )
 const CACHE_REAP_INTERVAL = 10 * time.Minute
@@ -27,7 +26,6 @@ func NewPokeApiClient() *PokeApiClient {
 func (c *PokeApiClient) makeRequest(req *http.Request, v any) error {
 	url := req.URL.String()
 	if data, found := c.Cache.Get(url); found {
-		fmt.Println("Grabbing data from PokeCache!")
 		return json.Unmarshal(data, v)
 	}
 
@@ -45,7 +43,7 @@ func (c *PokeApiClient) makeRequest(req *http.Request, v any) error {
 	return json.Unmarshal(data, v)
 
 }
-func (c *PokeApiClient) GetLocationAreas(url *string) (LocationAreaResponse, error) {
+func (c *PokeApiClient) GetLocationAreas(url *string) (LocationAreaList, error) {
 	fullUrl := c.BaseUrl + "/location-area"
 	if url != nil {
 		fullUrl = *url
@@ -53,31 +51,48 @@ func (c *PokeApiClient) GetLocationAreas(url *string) (LocationAreaResponse, err
 
 	req, err := http.NewRequest("GET", fullUrl, nil)
 	if err != nil {
-		return LocationAreaResponse{}, err
+		return LocationAreaList{}, err
 	}
 
-	var locationAreaResponse = LocationAreaResponse{}
+	var locationAreaResponse = LocationAreaList{}
 
 	err = c.makeRequest(req, &locationAreaResponse)
 	if err != nil {
-		return LocationAreaResponse{}, err
+		return LocationAreaList{}, err
 	}
 	return locationAreaResponse, nil
 }
 
-func (c *PokeApiClient) GetDetailedLocationArea(name string) (DetailedLocationAreaReponse, error) {
+func (c *PokeApiClient) GetDetailedLocationArea(name string) (LocationAreaSingle, error) {
 	fullUrl := c.BaseUrl + "/location-area/" + name
 
 	req, err := http.NewRequest("GET", fullUrl, nil)
 	if err != nil {
-		return DetailedLocationAreaReponse{}, err
+		return LocationAreaSingle{}, err
 	}
 
-	var detailedLocationArea = DetailedLocationAreaReponse{}
+	var detailedLocationArea = LocationAreaSingle{}
 
 	err = c.makeRequest(req, &detailedLocationArea)
 	if err != nil {
-		return DetailedLocationAreaReponse{}, err
+		return LocationAreaSingle{}, err
 	}
 	return detailedLocationArea, nil
+}
+
+func (c *PokeApiClient) GetPokemon(name string) (Pokemon, error) {
+	fullUrl := c.BaseUrl + "/pokemon/" + name
+
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	if err != nil {
+		return Pokemon{}, err
+	}
+
+	var pokemon = Pokemon{}
+
+	err = c.makeRequest(req, &pokemon)
+	if err != nil {
+		return Pokemon{}, err
+	}
+	return pokemon, nil
 }

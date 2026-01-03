@@ -6,7 +6,7 @@ type LocationArea struct {
 	URL  string `json:"url"`
 }
 
-type LocationAreaResponse struct {
+type LocationAreaList struct {
 	Count    int            `json:"count"`
 	Next     *string        `json:"next"`
 	Previous *string        `json:"previous"`
@@ -14,7 +14,7 @@ type LocationAreaResponse struct {
 }
 
 // Detailed LocationArea structs
-type DetailedLocationAreaReponse struct {
+type LocationAreaSingle struct {
 	EncounterMethodRates []EncounterMethodRates `json:"encounter_method_rates"`
 	GameIndex            int                    `json:"game_index"`
 	ID                   int                    `json:"id"`
@@ -29,14 +29,14 @@ type EncounterMethod struct {
 	URL  string `json:"url"`
 }
 
-type Version struct {
+type LocationAreaVersion struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
 
 type EncounterMethodRates struct {
 	EncounterMethod EncounterMethod  `json:"encounter_method"`
-	VersionDetails  []VersionDetails `json:"version_details"`
+	VersionDetails  []LocationAreaVersionDetails `json:"version_details"`
 }
 
 type Location struct {
@@ -54,7 +54,7 @@ type Names struct {
 	Name     string   `json:"name"`
 }
 
-type Pokemon struct {
+type LocationAreaPokemon struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
@@ -72,13 +72,13 @@ type EncounterDetails struct {
 	MinLevel        int    `json:"min_level"`
 }
 
-type VersionDetails struct {
+type LocationAreaVersionDetails struct {
 	EncounterDetails []EncounterDetails `json:"encounter_details"`
 	MaxChance        int                `json:"max_chance"`
-	Version          Version            `json:"version"`
+	Version          LocationAreaVersion            `json:"version"`
 }
 
 type PokemonEncounters struct {
-	Pokemon        Pokemon          `json:"pokemon"`
-	VersionDetails []VersionDetails `json:"version_details"`
+	Pokemon        LocationAreaPokemon          `json:"pokemon"`
+	VersionDetails []LocationAreaVersionDetails `json:"version_details"`
 }

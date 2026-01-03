@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
+	"text/template"
 	"github.com/WagnerJust/go-pokedex/internal/pokeapi"
 )
 
@@ -12,8 +14,8 @@ type config struct {
 	pokeapiClient *pokeapi.PokeApiClient
 	nextUrl		  *string
 	previousUrl   *string
+	pokedex 	  *Pokedex
 }
-
 type cliCommand struct {
 	name, description string
 	callback          func(config *config, args ...string) error
@@ -47,6 +49,16 @@ func init() {
 			name:        "explore",
 			description: "Explore a location area",
 			callback: exploreLocationArea,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Attempt to catch a pokemon",
+			callback:    catchPokemon,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspect a caught pokemon",
+			callback:    inspectPokemon,
 		},
 	}
 }
@@ -120,7 +132,69 @@ func exploreLocationArea(config *config, args ...string ) error {
 	return nil
 }
 
+func catchPokemon(config *config, args ...string ) error {
+	if len(args) < 2 {
+		return fmt.Errorf("catch requires a pokemon name")
+	}
+	name := args[1]
+	fmt.Printf("Throwing a Pokeball at %s...\n", name )
+	pokemon, err := config.pokeapiClient.GetPokemon(name)
+	if err != nil {
+		return err
+	}
+	if !attemptToCatch(pokemon) {
+		fmt.Printf("%s escaped!\n", pokemon.Name)
+		return nil
+	}
+	fmt.Printf("%s was caught!\n", pokemon.Name)
+	config.pokedex.Add(pokemon)
+	return nil
+}
 
+func displayPokemon(pokemon pokeapi.Pokemon) (string, error) {
+	pokemonInfo := `Name: {{.Name}}
+Height: {{.Height}}
+Weight: {{.Weight}}
+Stats:
+{{- range .Stats}}
+	-{{.Stat.Name}}: {{.BaseStat}}
+{{- end}}
+Types:
+{{- range .Types}}
+	-{{.Type.Name}}
+{{- end}}
+`
+
+	pokemonTemplate, err := template.New("pokemonInfo").Parse(pokemonInfo)
+	if err != nil {
+		return "", err
+	}
+	var result strings.Builder
+	err = pokemonTemplate.Execute(&result, pokemon)
+	if err != nil {
+		return "", err
+	}
+	return result.String(), nil
+}
+func inspectPokemon(config *config, args ...string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("inspect requires a pokemon name")
+	}
+	name := args[1]
+
+	pokemon, found := config.pokedex.Get(name)
+	if !found {
+		return fmt.Errorf("you can only inspect caught pokemon. You have not caught a %s", name)
+	}
+	output, err := displayPokemon(pokemon)
+	if err != nil {
+		return err
+	}
+	fmt.Print(output)
+	return nil
+
+
+}
 func cleanInput(text string) []string {
 	fields := strings.Fields(text)
 	for index, word := range fields {
@@ -129,14 +203,25 @@ func cleanInput(text string) []string {
 	return fields
 }
 
+func attemptToCatch(pokemon pokeapi.Pokemon) bool {
+	result := rand.Intn(pokemon.BaseExperience)
+	if result % 4 == 0 {
+		return true
+	}
+	return false
+}
 func ReplLoop() {
 	config := config{}
 	config.pokeapiClient = pokeapi.NewPokeApiClient()
+	config.pokedex = NewPokedex()
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
 		scanner.Scan()
 		input := cleanInput(scanner.Text())
+		if len(input) == 0 {
+			continue
+		}
 		userCommand := input[0]
 		value, ok := commands[userCommand]
 		if !ok {
@@ -145,7 +230,7 @@ func ReplLoop() {
 		}
 		err := value.callback(&config, input...)
 		if err != nil {
-			fmt.Println("Error:", err)
+			fmt.Println(err)
 		}
 	}
 }
