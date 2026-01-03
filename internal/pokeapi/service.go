@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 	"github.com/WagnerJust/go-pokedex/internal/pokecache"
+	"fmt"
 )
 const CACHE_REAP_INTERVAL = 10 * time.Minute
 
@@ -34,6 +35,9 @@ func (c *PokeApiClient) makeRequest(req *http.Request, v any) error {
 		return err
 	}
 
+	if res.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("Pokemon with that name does not exist.")
+	}
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
 	if err != nil {

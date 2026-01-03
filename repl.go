@@ -60,6 +60,11 @@ func init() {
 			description: "Inspect a caught pokemon",
 			callback:    inspectPokemon,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Display all caught pokemon",
+			callback:    displayPokedex,
+		},
 	}
 }
 
@@ -148,6 +153,7 @@ func catchPokemon(config *config, args ...string ) error {
 	}
 	fmt.Printf("%s was caught!\n", pokemon.Name)
 	config.pokedex.Add(pokemon)
+	fmt.Println("You may now inspect it with the inspect command")
 	return nil
 }
 
@@ -192,8 +198,17 @@ func inspectPokemon(config *config, args ...string) error {
 	}
 	fmt.Print(output)
 	return nil
+}
 
-
+func displayPokedex(config *config, args ...string) error {
+	if len(config.pokedex.pokemon) == 0 {
+		return fmt.Errorf("You have not caught any pokemon")
+	}
+	fmt.Println("Your Pokedex:")
+	for name := range config.pokedex.pokemon {
+		fmt.Printf(" - %s\n", name)
+	}
+	return nil
 }
 func cleanInput(text string) []string {
 	fields := strings.Fields(text)
@@ -205,7 +220,7 @@ func cleanInput(text string) []string {
 
 func attemptToCatch(pokemon pokeapi.Pokemon) bool {
 	result := rand.Intn(pokemon.BaseExperience)
-	if result % 4 == 0 {
+	if result % 3 == 0 {
 		return true
 	}
 	return false
